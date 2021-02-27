@@ -41,12 +41,13 @@ class UserIo:
         return self.lines_available
 
     def out_print(self, message=""):
-        if not self.output_lines:
-            print("\n")
         if self.output_file:
             self.output_file.write(message + '\n')
-        print(message)
-        self.output_lines.append(message)
+        else:
+            if not self.output_lines:
+                print("\n")
+            print(message)
+            self.output_lines.append(message)
 
     def has_errors(self):
         return self.error_count > 0

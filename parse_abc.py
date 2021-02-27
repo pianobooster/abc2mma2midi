@@ -38,7 +38,7 @@ class ParseAbc:
         self.unit_length_top = 1
         self.unit_length_bottom = 8
         self.abc_tune_title = ""
-        self.abc_tune_id = -1
+        self.abc_tune_id = None
         self.time_sig_bottom = 4
         self.reset()
 
@@ -46,7 +46,7 @@ class ParseAbc:
         self.unit_length_top = 1
         self.unit_length_bottom = 8
         self.abc_tune_title = ""
-        self.abc_tune_id = -1
+        self.abc_tune_id = None
         self.time_sig_bottom = 4
 
     def parse_input(self):
@@ -93,7 +93,7 @@ class ParseAbc:
                         tune_id = int(text)
                         self.emit.tune_start(tune_id)
                     else:
-                        self.io.error("The X: field '{}' is not an a valid tune id".format(field))
+                        self.io.error(f"The X: field '{field}' is not an a valid tune id")
                         return False
 
                 elif field == 'T':
@@ -138,7 +138,7 @@ class ParseAbc:
                 top, bottom = buff.pop_duration()
                 self.emit.note(note, self.calc_note_duration(top, bottom))
             else:
-                assert False, "unexpected element '{}'".format(buff.pop_char())
+                assert False, f"unexpected element '{buff.pop_char()}'"
 
         self.emit.tune_end()
 

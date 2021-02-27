@@ -3,11 +3,8 @@ from music import Barline, PPQN
 
 from collections import namedtuple
 
-Grooves68Standard = {'GROOVE_A_1': '68Swing1', 'GROOVE_A_2': '68Swing2Sus',
-                     'GROOVE_B_1': '68Swing1Plus', 'GROOVE_B_2': '68Swing2SusPlus'}
-
-GroovesStandard = {'GROOVE_A_1': 'GuitarBallad', 'GROOVE_A_2': 'GuitarBalladSus',
-                     'GROOVE_B_1': 'GuitarBallad1', 'GROOVE_B_2': 'GuitarBallad1Sus'}
+Grooves68Standard = ['68Swing1', '68Swing2Sus','68Swing1Plus', '68Swing2SusPlus']
+GroovesStandard = ['GuitarBallad', 'GuitarBalladSus', 'GuitarBallad1', 'GuitarBallad1Sus']
 
 FIRST_HEADER = """
 Begin Solo-Left
@@ -15,7 +12,9 @@ Begin Solo-Left
     Channel 4
 End
 
-Volume f    
+Volume f 
+
+Include ../../ExperimentalStrummingJigs
 """
 
 VoiceStandard = '''
@@ -86,7 +85,10 @@ class GenerateMma:
 
     def tune_title(self, tune_name):
         self.io.out_print("MidiTName " + tune_name)
-        self.tune_file_name = tune_name.replace(' ', '').replace('\t', '')
+        if self.options.mma_output_filename:
+            self.tune_file_name = str(self.options.mma_output_filename)
+        else:
+            self.tune_file_name = tune_name.replace(' ', '').replace('\t', '')
 
     def tune_time_sig(self, top, bottom):
         self.time_sig_top = top
@@ -96,16 +98,20 @@ class GenerateMma:
     def tune_key_sig(self, key_sig):
         time_str = str(self.time_sig_top)
         if self.time_sig_top == 6:
-            time_str += " Tabs=1,4"
+            time_str += " Tabs=1,4" # ZZ TBD decided what we should do here.
         self.io.out_print("Time " + time_str)
         self.io.out_print("TimeSig " + str(self.time_sig_top) + '/' + str(self.time_sig_bottom))
         if key_sig.endswith('m'):
             key_sig = key_sig.replace('m', ' Min')
         self.io.out_print("KeySig " + key_sig)
-        if self.time_sig_bottom == 8:
-            self.io.out_print("Tempo " + '300')
-        else:
-            self.io.out_print("Tempo " + '150')
+        stretch = self.options.mma_stretch
+        tempo = 150
+        if not stretch and self.time_sig_bottom == 8:
+            stretch = 200
+        if stretch:
+            tempo = (tempo * stretch) // 100
+
+        self.io.out_print(f"Tempo {tempo}")
 
     def output_custom_macro(self):
         self.io.out_print("MSet CustomSettings")
@@ -119,8 +125,10 @@ class GenerateMma:
     def output_count_in(self):
         self.output_groove(0)
         # self.io.out_print('Groove Metronome6') // ZZ
-        self.io.out_print("z!\nz\nz\n")
-        pass
+        if self.options.mma_debug:
+            self.io.out_print("z\n")
+        else:
+            self.io.out_print("z!\nz\nz\n")
 
     def output_pre_music(self):
         if self._pre_music_required:
@@ -133,21 +141,22 @@ class GenerateMma:
             if self.options.repeat_whole_piece > 1:
                 self.io.out_print("Repeat")
 
-            midi_include = "midiInc file={}-solo.mid Solo-Left=1 Volume=90 ".format(self.tune_file_name)
+            midi_include = f"midiInc file={self.tune_file_name}-solo.mid Solo-Left=1 Volume=90"
 
-            if self.time_sig_bottom == 8:
-                midi_include += " STRETCH=200"
-
+            stretch = self.options.mma_stretch
+            if not stretch and self.time_sig_bottom == 8:
+                stretch = 200
+            if stretch and stretch != 100:
+                midi_include += " STRETCH="+ str(stretch)
             if self.lead_in_bar_length:
-                self.io.out_print("// This tune has a lead in bar of {} ticks".format(self.lead_in_bar_length))
+                self.io.out_print(f"// This tune has a lead in bar of {self.lead_in_bar_length} ticks")
                 beat_adjust = self.lead_in_bar_length / PPQN
-                if self.is_compound_time_sig():
-                    beat_adjust *= 2
-                # midi_include += " START={}".format(self.lead_in_bar_length * self.time_sig_bottom // (PPQN * 2))
-                self.io.out_print("BEATADJUST {}".format(-beat_adjust))
+                if stretch:
+                    beat_adjust *= stretch / 100
+                self.io.out_print(f"BEATADJUST {-beat_adjust}")
             self.io.out_print(midi_include)
             if self.lead_in_bar_length:
-                self.io.out_print("BEATADJUST {}".format(beat_adjust))
+                self.io.out_print(f"BEATADJUST {beat_adjust}")
 
             self.io.out_print()
             self.output_groove(0)
@@ -178,20 +187,19 @@ class GenerateMma:
         return self.time_sig_top % 3 == 0 and self.time_sig_bottom == 8
 
     def output_groove(self, repeat_counter):
-        groove = GroovesStandard
+        groove_list = self.options.get_grooves()
 
-        if self.is_compound_time_sig():
-            groove = Grooves68Standard
-        if self.part_counter == 0:
-            if repeat_counter == 0:
-                groove_name =  groove['GROOVE_A_1']
+        if not groove_list:
+
+            if self.is_compound_time_sig():
+                groove_list = Grooves68Standard
             else:
-                groove_name =  groove['GROOVE_A_2']
-        else:
-            if repeat_counter == 0:
-                groove_name =  groove['GROOVE_B_1']
-            else:
-                groove_name =  groove['GROOVE_B_2']
+                groove_list = GroovesStandard
+
+        groove_idx = self.part_counter * 2 + repeat_counter
+        for idx, val in enumerate(groove_list):
+            if idx <= groove_idx:
+                groove_name = val
 
         self.io.out_print("Groove " + groove_name)
         self.io.out_print("$CustomSettings")
@@ -215,8 +223,7 @@ class GenerateMma:
             return
 
         if self.bar_ticks > self.bar_length:
-            self.delayed_errors.append("Bar length of {} is too long, it should be {}"
-                                       .format(self.bar_ticks, self.bar_length))
+            self.delayed_errors.append(f"Bar length of {self.bar_ticks} is too long, it should be {self.bar_length}")
 
         # Don't output anything if there have been no ticks between this and the previous bar
         if self.bar_ticks > 0:
@@ -249,7 +256,7 @@ class GenerateMma:
 
         else:
             self.delayed_errors.append(
-                "The chord '{}' is off the beat ({} ticks from the bar line)".format(chord_name, self.bar_ticks))
+                f"The chord '{chord_name}' is off the beat ({self.bar_ticks} ticks from the bar line)")
 
     def note(self, note, duration):
         self.bar_ticks += duration
