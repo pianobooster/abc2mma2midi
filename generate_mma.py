@@ -4,29 +4,58 @@ from music import Barline, PPQN
 from collections import namedtuple
 
 Grooves68Standard = ['68Swing1', '68Swing2Sus','68Swing1Plus', '68Swing2SusPlus']
-GroovesStandard = ['GuitarBallad', 'GuitarBalladSus', 'GuitarBallad1', 'GuitarBallad1Sus']
+#Grooves68Standard = ['68BanjoStrum', '68BanjoStrum','68GuitarStrum', '68BanjoStrum']
 
-FIRST_HEADER = """
+USE_GROOVE_PREFIX = "Groove "
+GroovesStandard = ['GuitarBallad', 'GuitarBalladSus', 'GuitarBallad1', 'GuitarBallad1Sus']
+#GroovesStandard = ['CountrySwing', 'CountrySwingSus', 'CountrySwing1', 'CountrySwing1Sus', 'CountrySwing2', 'CountrySwing2Sus']
+#GroovesStandard = ['Folk', 'FolkWalk', 'FolkArticulated', 'FolkSus', 'FolkArticulatedSus', 'FolkArticulatedSus']
+#GroovesStandard = ['First', 'SecondTry', 'First', 'SecondSustain' ]
+#GroovesStandard = ['SecondTry', 'SecondTry', 'SecondTry', 'SecondSustain' ]
+#GroovesStandard = ['FolkRock', 'FolkRockSus', 'FolkRockPlus', 'FolkRockSusPlus', 'FolkArticulatedSus', 'FolkArticulatedSus']
+#GroovesStandard = ['FolkRock', 'FolkRockSus', 'FolkRockPlus', 'FolkRockSusPlus', 'FolkArticulatedSus', 'FolkArticulatedSus']
+#GroovesStandard = ['FolkBallad', 'FolkBalladPlus', 'FolkBallad1', 'FolkBallad1Sus', 'FolkBallad1Plus', 'FolkBallad1SusPlus']
+# GroovesStandard = ['Polka', 'PolkaSus', 'PolkaArp', 'PolkaSusArp', 'Polka1', 'Polka1Sus']
+#USE_GROOVE_PREFIX = ""
+#GroovesStandard = ['Plectrum-Strum @StrumPattern duxuduxu', 'Plectrum-Strum @StrumPattern d-du-udu', 'Plectrum-Strum @StrumPattern dm.um.d.u.de.ue.d.u', 'Plectrum-Strum @StrumPattern 64.53.42.31.42.31.42.35' ]
+#GroovesStandard = ['Plectrum-Strum @StrumPattern d---d--u;-ud-dudu', 'Plectrum-Strum @StrumPattern dm.um.d.u.de.ue.d.u', 'Plectrum-Strum @StrumPattern dm.um.dm.um.dm.um.dm.um', 'Plectrum-Strum @StrumPattern 12345654' ]
+
+
+USE_TEMPO = 140 # 140 #ZZ 150 160
+USE_SOLO_VOLUME = 80  # 80 60
+USE_SOLO_VOICE = 'Flute' # Flute Clarinet Piano1
+USE_METRONOME = False
+USE_MASTER_VOLUME = 'mf'
+
+Grooves34Standard = ['GuitarStrum2', 'CountryWaltz1Sus', 'GuitarStrum2', 'CountryWaltz1Sus']
+
+FIRST_HEADER = f"""
 Begin Solo-Left
-    Voice Clarinet // Flute Clarinet
+    Voice {USE_SOLO_VOICE} // Flute Clarinet Piano1
     Channel 4
 End
 
-Volume f 
+Volume {USE_MASTER_VOLUME} 
 
-Include ../../ExperimentalStrummingJigs
+Include BoosterLib
+
+Drum-Metronome Tone Sticks
+Drum-Metronome Sequence {{1 0 30 * 4}}
 """
+
 
 VoiceStandard = '''
 // Walk Voice AcousticBass
 // Chord Voice Piano1
-// Chord-Sus Voice Strings
+Chord-Sus Voice Strings 
+Chord-Sus Volume pp 
 // Arpeggio Voice JazzGuitar
 '''
 Voice68Standard = '''
 // Walk Voice AcousticBass
 // Chord Voice Piano1
-Chord-Sus Voice Strings
+Chord-Sus Voice Strings //Strings
+Chord-Sus Volume ppp 
 // Arpeggio Voice JazzGuitar
 '''
 BarChords = namedtuple('BarChords', 'bar_no chords error_messages')
@@ -37,6 +66,10 @@ class GenerateMma:
     def __init__(self, user_io, options):
         self.io = user_io
         self.options = options
+        self.part_counter = 0  # Zero for the A part, 1 for the B part etc
+        self.delayed_errors = []
+
+        # todo These are only required to prevent ide warnings
         self.time_sig_top = 4
         self.time_sig_bottom = 4
         self.bar_no = 1
@@ -49,10 +82,6 @@ class GenerateMma:
         self.early_barlines = []
         self.inside_repeat_marks = False
         self._pre_music_required = True
-
-        self.part_counter = 0  # Zero for the A part, 1 for the B part etc
-        self.delayed_errors = []
-        self.tune_file_name = ''
         self._reset()
 
     def _reset(self):
@@ -66,8 +95,6 @@ class GenerateMma:
         self.lead_in_bar_length = 0
         self.bar_length = 4 * PPQN
         self.early_barlines = []
-        self.inside_repeat_marks = False
-        self._pre_music_required = True
         self.inside_repeat_marks = False
         self._pre_music_required = True
 
@@ -85,10 +112,6 @@ class GenerateMma:
 
     def tune_title(self, tune_name):
         self.io.out_print("MidiTName " + tune_name)
-        if self.options.mma_output_filename:
-            self.tune_file_name = str(self.options.mma_output_filename)
-        else:
-            self.tune_file_name = tune_name.replace(' ', '').replace('\t', '')
 
     def tune_time_sig(self, top, bottom):
         self.time_sig_top = top
@@ -105,7 +128,7 @@ class GenerateMma:
             key_sig = key_sig.replace('m', ' Min')
         self.io.out_print("KeySig " + key_sig)
         stretch = self.options.mma_stretch
-        tempo = 150
+        tempo = USE_TEMPO
         if not stretch and self.time_sig_bottom == 8:
             stretch = 200
         if stretch:
@@ -123,12 +146,24 @@ class GenerateMma:
         self.io.out_print("MSetEnd\n")
 
     def output_count_in(self):
-        self.output_groove(0)
-        # self.io.out_print('Groove Metronome6') // ZZ
+        if USE_METRONOME:
+            if self.is_compound_time_sig():
+                metronome = 'Metronome68' # ZZ needs a rewrite
+            elif self.is_time_sig(3, 4):
+                metronome = 'Metronome3'
+            else:
+                metronome = "Metronome4"
+            self.io.out_print(f'Groove {metronome}')
+        else:
+            self.output_groove(0)
+
+        self.io.out_print("Volume pp")
+
         if self.options.mma_debug:
             self.io.out_print("z\n")
         else:
             self.io.out_print("z!\nz\nz\n")
+        self.io.out_print(f"Volume {USE_MASTER_VOLUME}")
 
     def output_pre_music(self):
         if self._pre_music_required:
@@ -141,22 +176,23 @@ class GenerateMma:
             if self.options.repeat_whole_piece > 1:
                 self.io.out_print("Repeat")
 
-            midi_include = f"midiInc file={self.tune_file_name}-solo.mid Solo-Left=1 Volume=90"
+            if USE_SOLO_VOLUME > 0:
+                midi_include = f"midiInc file={self.options.midi_solo_filename()} Solo-Left=1 Volume={USE_SOLO_VOLUME}"
 
-            stretch = self.options.mma_stretch
-            if not stretch and self.time_sig_bottom == 8:
-                stretch = 200
-            if stretch and stretch != 100:
-                midi_include += " STRETCH="+ str(stretch)
-            if self.lead_in_bar_length:
-                self.io.out_print(f"// This tune has a lead in bar of {self.lead_in_bar_length} ticks")
-                beat_adjust = self.lead_in_bar_length / PPQN
-                if stretch:
-                    beat_adjust *= stretch / 100
-                self.io.out_print(f"BEATADJUST {-beat_adjust}")
-            self.io.out_print(midi_include)
-            if self.lead_in_bar_length:
-                self.io.out_print(f"BEATADJUST {beat_adjust}")
+                stretch = self.options.mma_stretch
+                if not stretch and self.time_sig_bottom == 8:
+                    stretch = 200
+                if stretch and stretch != 100:
+                    midi_include += " STRETCH="+ str(stretch)
+                if self.lead_in_bar_length:
+                    self.io.out_print(f"// This tune has a lead in bar of {self.lead_in_bar_length} ticks")
+                    beat_adjust = self.lead_in_bar_length / PPQN
+                    if stretch:
+                        beat_adjust *= stretch / 100
+                    self.io.out_print(f"BEATADJUST {-beat_adjust}")
+                self.io.out_print(midi_include)
+                if self.lead_in_bar_length:
+                    self.io.out_print(f"BEATADJUST {beat_adjust}")
 
             self.io.out_print()
             self.output_groove(0)
@@ -186,6 +222,9 @@ class GenerateMma:
     def is_compound_time_sig(self):
         return self.time_sig_top % 3 == 0 and self.time_sig_bottom == 8
 
+    def is_time_sig(self, top, bottom):
+        return self.time_sig_top == top and self.time_sig_bottom == bottom
+
     def output_groove(self, repeat_counter):
         groove_list = self.options.get_grooves()
 
@@ -193,6 +232,8 @@ class GenerateMma:
 
             if self.is_compound_time_sig():
                 groove_list = Grooves68Standard
+            elif self.is_time_sig(3,4):
+                groove_list = Grooves34Standard
             else:
                 groove_list = GroovesStandard
 
@@ -201,7 +242,8 @@ class GenerateMma:
             if idx <= groove_idx:
                 groove_name = val
 
-        self.io.out_print("Groove " + groove_name)
+        # todo make the grove optional
+        self.io.out_print(USE_GROOVE_PREFIX + groove_name)
         self.io.out_print("$CustomSettings")
 
     def barline(self, barline):

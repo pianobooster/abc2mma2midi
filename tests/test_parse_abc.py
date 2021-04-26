@@ -2,10 +2,12 @@ from unittest.mock import MagicMock, call
 
 import pytest
 
+from abc_buffer import AbcFormatError
 from music import Barline
 from options import Options
 from parse_abc import ParseAbc
 from tests.mock_file import MockFile
+from tests.test_options import helper_set_options
 from user_io import UserIo
 
 abc_header_text = """
@@ -58,7 +60,6 @@ def user_io():
 
 @pytest.fixture
 def parse_abc(emitter, user_io, options, mock_file):
-    """TBD"""
     user_io.set_input_file(mock_file)
     return ParseAbc(emitter, user_io, options)
 
@@ -78,13 +79,61 @@ def test_tune_header(mock_file, parse_abc, emitter):
     emitter.tune_key_sig.assert_called_once_with("Em")
 
 
+def test_no_tune_match(options, mock_file, parse_abc, emitter, user_io):
+    mock_file.mock_content("X:1\nT:One Title\nK:G\nA")
+    helper_set_options(options, ['','xOne'])
+    parse_abc.parse_input()
+    emitter.tune_start.assert_not_called()
+    emitter.tune_title.assert_not_called()
+    assert user_io.has_errors()
+
+
+def test_partial_tune_match(options, mock_file, parse_abc, emitter):
+    mock_file.mock_content('X:1\nT:ONE Title\nK:G\nA')
+    helper_set_options(options, ['','ONE'])
+    parse_abc.parse_input()
+    emitter.tune_start.assert_called()
+    emitter.tune_title.assert_called_once_with('ONE Title')
+
+
+def test_ignore_lines_in_header(options, mock_file, parse_abc, emitter):
+    mock_file.mock_content('X:1\n%%MIDI transpose 0\nQ:1/4 =120\nT:ONE Title\nK:G\nA')
+    helper_set_options(options, ['','ONE Title'])
+    parse_abc.parse_input()
+    emitter.tune_start.assert_called()
+    emitter.tune_title.assert_called_once_with('ONE Title')
+
+def test_first_tune_is_used_if_no_tune_title(options, mock_file, parse_abc, emitter):
+    mock_file.mock_content('X:1\nT:ONE Title\nK:G\nA')
+    helper_set_options(options, ['',])
+    parse_abc.parse_input()
+    emitter.tune_start.assert_called()
+    emitter.tune_title.assert_called_once_with('ONE Title')
+
+
+def test_two_tiles_tune_match(options, mock_file, parse_abc, emitter):
+    mock_file.mock_content('X:1\nT:ONE Title\nT:TWO Title\nK:G\nA')
+    helper_set_options(options, ['','ONE'])
+    parse_abc.parse_input()
+    emitter.tune_start.assert_called()
+    emitter.tune_title.assert_called_once_with('ONE Title')
+
+
+def test_two_tiles_tune_match2(options, mock_file, parse_abc, emitter):
+    mock_file.mock_content('X:1\nT:ONE Title\nT:TWO Title\nK:G\nA')
+    helper_set_options(options, ['', 'TWO'])
+    parse_abc.parse_input()
+    emitter.tune_start.assert_called()
+    emitter.tune_title.assert_called_once_with('TWO Title')
+
+
 def test_tune_key_sig_using_abc_modes(mock_file, parse_abc, emitter):
     mock_file.mock_content("X:1\nT:t\nK:Dmix\nA")
     parse_abc.parse_input()
     emitter.tune_key_sig.assert_called_once_with("G")
 
 
-def test_tune_key_sig_using_abc_modesDDor(mock_file, parse_abc, emitter):
+def test_tune_key_sig_using_abc_modes_DDor(mock_file, parse_abc, emitter):
     mock_file.mock_content("X:1\nT:t\nK:Ddor\nA")
     parse_abc.parse_input()
     emitter.tune_key_sig.assert_called_once_with("Am")
@@ -103,6 +152,15 @@ def test_bad_id_header(mock_file, parse_abc, emitter, user_io):
     parse_abc.parse_input()
     user_io.error.assert_called()
     emitter.tune_title.assert_not_called()
+
+
+def test_finding_a_tune(mock_file, parse_abc, emitter, options):
+    mock_file.mock_content(multi_tune_file)
+    options.tune_search_name = "T2"
+    parse_abc.parse_input()
+
+    emitter.tune_start.assert_called_once_with(2)
+    emitter.tune_title.assert_called_once_with("T2")
 
 
 def test_notes_lengths_for_default_l(mock_file, parse_abc, emitter):
@@ -149,20 +207,71 @@ C|:"Gm7"d
 F
 """)
     parse_abc.parse_input()
-    calls = [
-        call("C", 96),
-        call("d", 96),
-        call("F", 96),
-    ]
-    emitter.note.assert_has_calls(calls)
+
+    emitter.note.assert_has_calls([call("C", 96), call("d", 96), call("F", 96)])
     emitter.barline.assert_called_once_with(Barline.RepeatStart)
     emitter.chord_symbol.assert_called_once_with("Gm7")
 
 
-def test_finding_a_tune(mock_file, parse_abc, emitter, options):
-    mock_file.mock_content(multi_tune_file)
-    options.abc_tune_title = "T2"
-    parse_abc.parse_input()
+def test_parse_tune_body(parse_abc, emitter):
+    parse_abc._body = ['C|:"Gm7"d', 'F']
+    parse_abc.process_body()
 
-    emitter.tune_start.assert_called_once_with(2)
-    emitter.tune_title.assert_called_once_with("T2")
+    emitter.note.assert_has_calls([call("C", 96), call("d", 96), call("F", 96)])
+    emitter.barline.assert_called_once_with(Barline.RepeatStart)
+    emitter.chord_symbol.assert_called_once_with("Gm7")
+
+
+def test_valid_order_of_constructs_for_abc_note(parse_abc, emitter):
+    parse_abc._body = [' | "Gm7"^d\'2']; parse_abc.process_body()
+
+    emitter.note.assert_called_once_with("^d'", 192)
+    emitter.barline.assert_called_once_with(Barline.Standard)
+    emitter.chord_symbol.assert_called_once_with("Gm7")
+
+
+def test_chord_in_wrong_place(parse_abc, emitter):
+    with pytest.raises(AssertionError, match=r"unexpected element '|'"):
+        parse_abc._body = ['"Gm7"|d2']; parse_abc.process_body()
+
+    emitter.chord_symbol.assert_called_once_with("Gm7")
+    emitter.note.assert_not_called()
+    emitter.barline.assert_not_called()
+
+
+def test_space_in_wrong_place(parse_abc, emitter):
+    with pytest.raises(AbcFormatError, match=r"Badly formatted note"):
+        parse_abc._body = ['|"Gm7"^ d2']; parse_abc.process_body()
+
+    emitter.barline.assert_called_once_with(Barline.Standard)
+    emitter.chord_symbol.assert_called_once_with('Gm7')
+    emitter.note.assert_not_called()
+
+
+def test_space_after_chord_is_ignored(parse_abc, emitter):
+    parse_abc._body = ['|"Gm7" d2']; parse_abc.process_body()
+    emitter.barline.assert_called_once_with(Barline.Standard)
+    emitter.chord_symbol.assert_called_once_with('Gm7')
+    emitter.note.assert_called_once_with('d', 192)
+
+
+def test_duration_in_wrong_place(parse_abc, emitter):
+    with pytest.raises(AssertionError, match=r"unexpected element '2'"):
+        parse_abc._body = ['|"Gm7"2d']; parse_abc.process_body()
+
+    emitter.barline.assert_called_once_with(Barline.Standard)
+    emitter.chord_symbol.assert_called_once_with("Gm7")
+    emitter.note.assert_not_called()
+
+
+def test_triplets(parse_abc, emitter):
+    parse_abc._body = ['"G"(3cBG A2']; parse_abc.process_body()
+
+    emitter.chord_symbol.assert_called_once_with("G")
+    emitter.note.assert_has_calls([call("c", 64), call("B", 64), call("G", 64), call("A", 192)])
+
+
+def test_ignored_body_field_lines(parse_abc, emitter):
+    parse_abc._body = ['%%MIDI control 7 96','A','K:Am',"I:rubbish",'%%MIDI control 7 96', 'B']; parse_abc.process_body()
+
+    emitter.note.assert_has_calls([call("A", 96), call("B", 96)])

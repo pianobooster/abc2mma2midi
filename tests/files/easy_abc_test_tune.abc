@@ -1,0 +1,25 @@
+X:2044
+%%MIDI control 7 96
+%%MIDI control 10 64
+%%MIDI gchordon
+%%MIDI program 0
+%%MIDI chordprog 24
+%%MIDI bassprog 24
+%%MIDI chordvol 96
+%%MIDI bassvol 96
+%%MIDI transpose 0
+Q:1/4 =120
+T:Bang Upp
+R:Jig
+C:Trad.
+O:England, Norfolk
+Z:Paul Hardy's Session Tunebook 2017 (see www.paulhardy.net). Creative Commons cc by-nc-sa licenced.
+M:6/8
+L:1/8
+Q:3/8=120
+K:D
+%%MIDI control 7 96
+A|"D"d2d f2f|a2a f2d|"G"g2e "D"f2d|"A"cde ABc|"D"d2d f2f|a2a f2d|"G"g2e "D"f2d|"A7"cBA "D"d2:|
+|:A|"D"F2A "A"E2A|"D"F2A d2c|"G"B2d "D"A2d|"Em"G2e "A7"cBA|"D"F2A "A"E2A|"D"F2A d2c|"G"Bcd "A7"ABc|"D"d3-d2:|
+|:A|"D"f2e d2c|"G"B2A G2F|G2A B2e|"A7"dcB A2A|"D"f2e d2c|"G"B2A G2F|G2B "A7"A2F|GFE "D"D2:|
+

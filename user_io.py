@@ -6,8 +6,7 @@ class UserIo:
         self.output_file = None
         self.lines_available = False
         self.output_lines = []
-        self.errors = []
-        self.error_count = 0
+        self.errors_messages = []
         self.line_counter = 0
 
     def set_input_file(self, input_file):
@@ -35,7 +34,10 @@ class UserIo:
         error_text = "ERROR: " + message
         print(error_text)
         self.output_lines.append(error_text)
-        self.error_count += 1
+        self.errors_messages.append(error_text)
+
+    def info(self, message):
+         print(message)
 
     def lines_available(self):
         return self.lines_available
@@ -50,7 +52,7 @@ class UserIo:
             self.output_lines.append(message)
 
     def has_errors(self):
-        return self.error_count > 0
+        return len(self.errors_messages) > 0
 
     def output_text(self):
         return "\n".join(self.output_lines)

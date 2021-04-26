@@ -1,0 +1,37 @@
+// ======================================
+// = Setup
+
+
+
+Plugin @StrumPattern
+
+SeqClear
+Time 4
+
+Begin Plectrum-Strum 
+    Tuning e- a- d g b e+
+    Octave 4
+    Capo   0        
+    
+    Voice     NylonGuitar 
+    Volume    m
+
+    RVolume   -10,0
+    RTime     5
+    RDuration 5
+    RSkip     0
+End
+
+Begin Bass-FretNoise
+    Volume pp
+    
+    RVolume 20
+    RTime -50,0
+    Delay -16
+    RSkip 30
+    Voice GuitarFretNoise
+End
+Plectrum-Strum FretNoise Track=Bass-FretNoise Octave=-2 Duration=16    
+
+
+
