@@ -85,7 +85,7 @@ def get_script_path():
     return os.path.dirname(os.path.realpath(__file__))
 
 
-class Abc2Mma:
+class Abc2Mma2Midi:
 
     def __init__(self, options):
         self.options = options
@@ -147,6 +147,6 @@ class Abc2Mma:
 
 if __name__ == "__main__":
     options = Options()
-    main = Abc2Mma(options)
+    main = Abc2Mma2Midi(options)
     main.pass_args(sys.argv[1:])
 

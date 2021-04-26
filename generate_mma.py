@@ -21,7 +21,7 @@ GroovesStandard = ['GuitarBallad', 'GuitarBalladSus', 'GuitarBallad1', 'GuitarBa
 #GroovesStandard = ['Plectrum-Strum @StrumPattern d---d--u;-ud-dudu', 'Plectrum-Strum @StrumPattern dm.um.d.u.de.ue.d.u', 'Plectrum-Strum @StrumPattern dm.um.dm.um.dm.um.dm.um', 'Plectrum-Strum @StrumPattern 12345654' ]
 
 
-USE_TEMPO = 140 # 140 #ZZ 150 160
+USE_TEMPO = 150 # 150 #ZZ 160
 USE_SOLO_VOLUME = 80  # 80 60
 USE_SOLO_VOICE = 'Flute' # Flute Clarinet Piano1
 USE_METRONOME = False
@@ -99,7 +99,7 @@ class GenerateMma:
         self._pre_music_required = True
 
     def tune_start(self, tune_id):
-        self.io.out_print("// created by abc2mma")
+        self.io.out_print("// created by abc2mma2midi")
 
     def tune_end(self):
         # if the last bar last barline was not a full bar then we need to call this

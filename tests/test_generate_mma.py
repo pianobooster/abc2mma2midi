@@ -82,7 +82,7 @@ K:D
 |"D"d8|
 """)
     assert not user_io.has_errors()
-    assert_has_line(user_io, "// created by abc2mma")
+    assert_has_line(user_io, "// created by abc2mma2midi")
     assert_has_line(user_io, "MidiTName title")
     assert_has_line(user_io, "Time 4")
     assert_has_line(user_io, "TimeSig 4/4")

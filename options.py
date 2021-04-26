@@ -22,7 +22,7 @@ class Options:
         self.pass_arguments(['', ''])
 
     def init_arg_parse(self):
-        self._parser = ArgumentParser(prog='abc2mma',
+        self._parser = ArgumentParser(prog='abc2mma2midi',
                                       usage="%(prog)s [options] <abc-source-file> <tune-title>"
                                             "\nFor more help type: %(prog)s --help",
                                       description='creates a Musical MIDI Accompaniment(MMA) from ABC notation tunes.')
