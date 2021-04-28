@@ -7,8 +7,9 @@ class AutoChord:
         self._emitter = emitter
 
 
-    def note(self, note, duration):
-        if note == 'G':
-            self._emitter.chord_symbol("Gm")
+    def midi_note(self, note, duration):
+        scale = note % 12
+        if scale == 7:
+            self._emitter.chord_symbol("G")
         else:
             self._emitter.chord_symbol("C")
