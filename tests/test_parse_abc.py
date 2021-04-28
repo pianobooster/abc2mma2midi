@@ -49,7 +49,6 @@ def mock_file():
 
 @pytest.fixture
 def emitter():
-    """TBD"""
     return MagicMock()
 
 
