@@ -6,6 +6,11 @@ class AutoChord:
         self._options = options
         self._emitter = emitter
 
+    def key_sig(self, key_sig ):
+        pass
+
+    def time_sig(self, top, bottom ):
+        pass
 
     def midi_note(self, note, duration):
         scale = note % 12

@@ -26,6 +26,22 @@ def emitter():
 def auto_chord(user_io, options, emitter):
     return AutoChord(user_io, options, emitter)
 
+def input_notes(auto_chord, note_list):
+    note_lookup = {'C':60, 'C#':61,'D':62,'D#':63,'E':64,'F':65,'F#':66,'G':67,'G#':68,'A':69,'A#':70,'B':71}
+    duration = 192
+    for note in note_list.split():
+        m_note= note_lookup[note]
+        print(f' note {note} midi value {m_note}')
+        auto_chord.midi_note(m_note, duration)
+
+
+def validate_chords(emitter, chord_list):
+    calls = []
+    for chord in chord_list.split():
+        calls.append(call(chord))
+
+    emitter.chord_symbol.assert_has_calls(calls)
+
 
 def test_middle_c(auto_chord, emitter):
     auto_chord.midi_note(60, 192)
@@ -33,28 +49,19 @@ def test_middle_c(auto_chord, emitter):
 
 
 def test_c_maj_chord(auto_chord, emitter):
-    auto_chord.midi_note(60, 192) # C
-    auto_chord.midi_note(64, 192) # E
-    auto_chord.midi_note(67, 192) # G
+    input_notes(auto_chord, "C E G")
+    validate_chords(emitter, "C C G")
 
-    emitter.chord_symbol.assert_has_calls([call('C'), call('C'), call('G')])
 
-    ## more test to be written
+def test_c_maj_scale(auto_chord, emitter):
+    auto_chord.key_sig("C")
+    auto_chord.time_sig(4,4)
+    input_notes(auto_chord, "C D E G F G A B")
+    validate_chords(emitter, "C G C F G F G")
 
-    # C Major scale
-    # C -> 1 (Cmaj)
-    # D -> 5 (Gmaj)
-    # E -> 1 (Cmaj)
-    # F -> 4 (Fmaj)
-    # G -> 5 (Gmaj)
-    # A -> 4 (Fmaj)
-    # B -> 5 (Gmaj)
 
-    # D major scale
-    # D -> 1 (Dmaj)
-    # E -> 5 (Amaj)
-    # F# -> 1 (Dmaj)
-    # G -> 4 (Gmaj)
-    # A -> 5 (Amaj)
-    # B -> 4 (Gmaj)
-    # C# -> 5 (Amaj)
+def test_d_maj_scale(auto_chord, emitter):
+    auto_chord.key_sig("D")
+    input_notes(auto_chord, "D E G F# G A B C#")
+    validate_chords(emitter, "D A D G A G A")
+
