@@ -27,7 +27,7 @@ def auto_chord(user_io, options, emitter):
     return AutoChord(user_io, options, emitter)
 
 def input_notes(auto_chord, note_list):
-    note_lookup = {'C':60, 'C#':61,'D':62,'D#':63,'E':64,'F':65,'F#':66,'G':67,'G#':68,'A':69,'A#':70,'B':71}
+    note_lookup = {'C':60, 'C#':61,'D':62,'D#':63,'E':64,'F':65,'F#':66,'G':67,'G#':68,'A':69,'A#':70,'Bb':70,'B':71}
     duration = 192
     for note in note_list.split():
         m_note= note_lookup[note]
@@ -65,3 +65,11 @@ def test_d_maj_scale(auto_chord, emitter):
     input_notes(auto_chord, "D E G F# G A B C#")
     validate_chords(emitter, "D A D G A G A")
 
+# Key sig C I - IV - V chords	C - F - G
+# Key sig F I - IV - V chords   F - Bb - C
+
+def test_f_maj_scale(auto_chord, emitter):
+    auto_chord.key_sig("C")
+    auto_chord.time_sig(4,4)
+    input_notes(auto_chord, "F A Bb C D E F G")
+    validate_chords(emitter, "F C F Bb C Bb C")
