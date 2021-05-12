@@ -11,6 +11,7 @@ from user_io import UserIo
 
 def execute_command(cmd):
     print(cmd)
+    # ZZ https://stackoverflow.com/questions/6977215/os-system-to-invoke-an-exe-which-lies-in-a-dir-whose-name-contains-whitespace
     if os.system(cmd) != 0:
         sys.exit("Error in: " + cmd)
 
@@ -58,13 +59,13 @@ def patch_midi_cvs(file_name, mma_stretch):
 
 
 def patch_mma_midi_output(file_name, options):
-    execute_command(f"midicsv \"{file_name}\" \"{file_name}.tmp\"")
+    execute_command(f'midicsv "{file_name}" "{file_name}.tmp"')
     patch_midi_cvs(file_name, options.mma_stretch)
 
     if options.mma_debug:
-        execute_command(f"csvmidi \"{file_name}-fixed.tmp\" \"{file_name}-patched.mid\"")
+        execute_command(f'csvmidi "{file_name}-fixed.tmp" "{file_name}-patched.mid"')
     else:
-        execute_command(f"csvmidi \"{file_name}-fixed.tmp\" \"{file_name}\"")
+        execute_command(f'csvmidi "{file_name}-fixed.tmp" "{file_name}"')
     rm_file(f'{file_name}-fixed.tmp')
     rm_file(f'{file_name}.tmp')
 
@@ -117,7 +118,7 @@ class Abc2Mma2Midi:
         output_file.close()
 
         # Note abc2midi -BF makes the output play out of time when loaded into a notation program
-        execute_command(f"abc2midi  \"{self.options.abc_file_name}\" {tune_id} -o \"{self.options.midi_solo_filename()}\" -RS" ) # ZZ -CS was -RS)
+        execute_command(f'abc2midi  "{self.options.abc_file_name}" {tune_id} -o "{self.options.midi_solo_filename()}" -RS') # ZZ -CS was -RS)
         mma_path = self.options.mma_path
         if mma_path:
             if not os.path.exists(mma_path):
@@ -132,8 +133,10 @@ class Abc2Mma2Midi:
         if not os.path.exists(mma_inc_path):
             sys.exit(f"Error MMA_INCPATH `{mma_inc_path}` does not exist")
 
+        os.environ['MMA_INCPATH'] = mma_inc_path
+
         # todo decide about this -II   skip permissions test for plugins (Dangerous!)
-        execute_command(f"MMA_INCPATH={mma_inc_path} {mma_path}  -II \"{self.options.mma_filename()}\" -f \"{self.options.midi_filename()}\"")
+        execute_command(f'{mma_path}  -II "{self.options.mma_filename()}" -f "{self.options.midi_filename()}"')
 
         if self.parse_abc.time_sig_bottom == 8 and self.options.patch_mma:
             patch_mma_midi_output(self.options.midi_filename(), self.options)

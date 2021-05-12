@@ -117,7 +117,7 @@ class Options:
     def abc_tune_title(self, name):
         self._abc_tune_title = name
         if not self._output_filename:
-            self._output_filename = pathlib.PosixPath(name.replace(' ', '').replace('\t', ''))
+            self._output_filename = pathlib.PurePosixPath(name.replace(' ', '').replace('\t', ''))
 
     def outputDir(self, outputDir):
         self._outputDir = outputDir
