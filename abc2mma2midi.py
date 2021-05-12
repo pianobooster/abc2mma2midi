@@ -118,6 +118,7 @@ class Abc2Mma2Midi:
         output_file.close()
 
         # Note abc2midi -BF makes the output play out of time when loaded into a notation program
+
         execute_command(f'abc2midi  "{self.options.abc_file_name}" {tune_id} -o "{self.options.midi_solo_filename()}" -RS') # ZZ -CS was -RS)
         mma_path = self.options.mma_path
         if mma_path:
@@ -136,6 +137,7 @@ class Abc2Mma2Midi:
         os.environ['MMA_INCPATH'] = mma_inc_path
 
         # todo decide about this -II   skip permissions test for plugins (Dangerous!)
+
         execute_command(f'{mma_path}  -II "{self.options.mma_filename()}" -f "{self.options.midi_filename()}"')
 
         if self.parse_abc.time_sig_bottom == 8 and self.options.patch_mma:

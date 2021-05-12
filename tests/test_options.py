@@ -48,7 +48,11 @@ def test_command_line_options(options):
     assert isinstance(options.mma_stretch, float)
     assert options.mma_stretch == 200
     assert isinstance(options.mma_path, pathlib.Path)
-    assert str(options.mma_path) == '/my/path/mma.py'
+
+    if os.name == 'nt':  # Windows
+        assert str(options.mma_path) == '\\my\\path\\mma.py'
+    else:
+        assert str(options.mma_path) == '/my/path/mma.py'
 
     assert options.midi_filename() == 'my-tune.mid'
     assert options.midi_solo_filename() == 'my-tune-solo.mid'
@@ -68,19 +72,24 @@ def test_single_groove(options):
 
 
 def test_easy_abc2midi_emulation(options):
-    helper_set_options(options, ['-', '-o', '/a/b/b/file-name',
+    helper_set_options(options, ['-', '-o', '/a/b/c/file-name',
                                  '-BF', '-TT', '440', '-EA'])
     assert options.abc_file_name == '-'
     assert options.tune_search_name is None
 
 
 def test_output_file_name(options):
-    helper_set_options(options, ['-', '-o', '/a/b/b/file-name'])
-    assert options.midi_filename() == '/a/b/b/file-name.mid'
-    assert options.midi_solo_filename() == '/a/b/b/file-name-solo.mid'
-    assert options.mma_filename() == '/a/b/b/file-name.mma'
+    helper_set_options(options, ['-', '-o', '/a/b/c/file-name'])
+    if os.name == 'nt':  # Windows
+        path_name = '\\a\\b\\c\\'
+    else:
+        path_name = '/a/b/c/'
 
-    helper_set_options(options, ['-', '-o', '/a/b/b/file-name.midi'])
-    assert options.midi_filename() == '/a/b/b/file-name.midi'
-    assert options.midi_solo_filename() == '/a/b/b/file-name-solo.mid'
-    assert options.mma_filename() == '/a/b/b/file-name.mma'
+    assert options.midi_filename() == f'{path_name}file-name.mid'
+    assert options.midi_solo_filename() == f'{path_name}file-name-solo.mid'
+    assert options.mma_filename() == f'{path_name}file-name.mma'
+
+    helper_set_options(options, ['-', '-o', '/a/b/c/file-name.midi'])
+    assert options.midi_filename() == f'{path_name}file-name.midi'
+    assert options.midi_solo_filename() == f'{path_name}file-name-solo.mid'
+    assert options.mma_filename() == f'{path_name}file-name.mma'
